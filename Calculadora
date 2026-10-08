@@ -1,1 +1,402 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Jornada en Marcha - Control de Ganancias</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f5f3;
+            color: #172b23;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bg-didi-dark {
+            background-color: #18372b;
+        }
+        .border-didi-line {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12 flex flex-col items-center justify-start p-4 md:p-6 select-none">
 
+    <main class="w-full max-w-md mx-auto space-y-4">
+
+        <!-- HEADER CON NAVEGACIÓN Y SELECTOR DE FECHA -->
+        <header class="pt-2 space-y-2">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-extrabold text-[#112d22] tracking-tight">Tu jornada en marcha</h1>
+                <div id="indicador-estado" class="flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <span>Hoy</span>
+                </div>
+            </div>
+
+            <!-- CONTROLES PARA CAMBIAR Y ELEGIR FECHA DE TRABAJO -->
+            <div class="bg-white p-2.5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-2">
+                <button onclick="cambiarDiaRelativo(-1)" class="p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-all active:scale-95" title="Día anterior">
+                    <i class="ph-bold ph-caret-left text-lg"></i>
+                </button>
+
+                <div class="flex-1 flex items-center justify-center gap-2">
+                    <i class="ph-bold ph-calendar text-emerald-700 text-lg"></i>
+                    <input type="date" id="selector-fecha-dia" onchange="seleccionarFechaCalendario(this.value)"
+                        class="font-bold text-gray-800 text-sm bg-transparent cursor-pointer focus:outline-none border-b border-dashed border-emerald-600">
+                </div>
+
+                <button onclick="cambiarDiaRelativo(1)" class="p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-all active:scale-95" title="Día siguiente">
+                    <i class="ph-bold ph-caret-right text-lg"></i>
+                </button>
+                
+                <button onclick="irAHoy()" class="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl hover:bg-emerald-100 transition-all active:scale-95">
+                    Hoy
+                </button>
+            </div>
+            
+            <p id="jornada-subtitle" class="text-gray-500 font-medium text-xs px-1 text-center sm:text-left">
+                Viendo la jornada seleccionada en el calendario.
+            </p>
+        </header>
+
+        <!-- TARJETA PRINCIPAL VERDE EXACTA A LA IMAGEN -->
+        <section class="bg-didi-dark text-white rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
+            <!-- Encabezado de la tarjeta -->
+            <div class="flex justify-between items-baseline mb-2">
+                <span class="text-[11px] font-extrabold tracking-wider text-gray-300 uppercase">TOTAL DE LA JORNADA</span>
+                <span class="text-base font-semibold text-gray-200"><span id="total-servicios-cnt">0</span> servicios</span>
+            </div>
+
+            <!-- Total grande -->
+            <div class="mb-4">
+                <div class="text-4xl sm:text-5xl font-extrabold tracking-tight" id="total-jornada-monto">
+                    $ 0
+                </div>
+            </div>
+
+            <!-- Línea divisora -->
+            <hr class="border-didi-line my-4" />
+
+            <!-- Subsecciones: Efectivo y Vales/Corporativo -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Efectivo -->
+                <div>
+                    <div class="flex items-center space-x-1.5 text-gray-300 mb-1">
+                        <i class="ph-bold ph-money text-lg"></i>
+                        <span class="text-sm font-semibold">Efectivo</span>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold tracking-tight text-white" id="total-efectivo-monto">
+                        $ 0
+                    </div>
+                </div>
+
+                <!-- Corporativo / Vales -->
+                <div>
+                    <div class="flex items-center space-x-1.5 text-gray-300 mb-1">
+                        <i class="ph-bold ph-ticket text-lg"></i>
+                        <span class="text-sm font-semibold">Vales</span>
+                    </div>
+                    <div class="text-xl sm:text-2xl font-bold tracking-tight text-white" id="total-corporativo-monto">
+                        $ 0
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FORMULARIO DE REGISTRO DE VIAJE -->
+        <section id="seccion-formulario" class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+            <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <i class="ph-fill ph-plus-circle text-emerald-600 text-xl"></i>
+                Sumar viaje a este día
+            </h2>
+
+            <form id="form-nuevo-viaje" class="space-y-3.5">
+                <!-- Selector Tipo de Pago -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tipo de Pago</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tipoPago" value="efectivo" checked class="peer sr-only">
+                            <div class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 border-gray-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 peer-checked:text-emerald-900 font-bold text-xs transition-all text-gray-600">
+                                <i class="ph-bold ph-money text-base"></i>
+                                Efectivo
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tipoPago" value="corporativo" class="peer sr-only">
+                            <div class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border-2 border-gray-200 peer-checked:border-emerald-700 peer-checked:bg-emerald-50 peer-checked:text-emerald-900 font-bold text-xs transition-all text-gray-600">
+                                <i class="ph-bold ph-ticket text-base"></i>
+                                Corporativo
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Monto del Viaje: Formateo de Miles Flexible -->
+                <div>
+                    <label for="monto-input" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Valor del viaje ($)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 font-extrabold text-lg">$</span>
+                        <input type="text" id="monto-input" inputmode="numeric" placeholder="Ej: 5.000 ó 12.000" autocomplete="off"
+                            class="w-full pl-9 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-600 focus:ring-0 text-2xl font-black text-gray-800 outline-none transition-all placeholder:font-normal placeholder:text-gray-300">
+                    </div>
+                </div>
+
+                <!-- Botones de Monto Rápido -->
+                <div class="flex flex-wrap gap-1.5 pt-0.5">
+                    <button type="button" onclick="setQuickMonto(3500)" class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all">$3.500</button>
+                    <button type="button" onclick="setQuickMonto(5000)" class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all">$5.000</button>
+                    <button type="button" onclick="setQuickMonto(8000)" class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all">$8.000</button>
+                    <button type="button" onclick="setQuickMonto(12000)" class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all">$12.000</button>
+                    <button type="button" onclick="setQuickMonto(15000)" class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all">$15.000</button>
+                </div>
+
+                <!-- Botón de Agregar -->
+                <button type="submit" class="w-full py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-base shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2">
+                    <i class="ph-bold ph-plus"></i> Sumar al día seleccionado
+                </button>
+            </form>
+        </section>
+
+        <!-- DETALLE DE SERVICIOS DEL DÍA SELECCIONADO -->
+        <section class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <i class="ph-bold ph-list-bullets text-gray-400 text-base"></i>
+                    Viajes registrados este día
+                </h3>
+                <span id="cant-registros-badge" class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                    0 viajes
+                </span>
+            </div>
+
+            <div id="lista-servicios" class="divide-y divide-gray-100 max-h-60 overflow-y-auto pr-1">
+                <p id="sin-servicios-msg" class="text-center py-6 text-xs text-gray-400 font-medium">
+                    No hay viajes registrados para este día.
+                </p>
+            </div>
+        </section>
+
+        <!-- FOOTER IDÉNTICO A LA FOTO CON AVISO DE AUTO-GUARDADO -->
+        <footer class="text-center pt-2 pb-4">
+            <p class="text-xs text-gray-500 font-medium flex items-center justify-center gap-1.5">
+                <i class="ph-fill ph-shield-check text-emerald-600 text-base"></i>
+                Cada servicio se guarda automáticamente en tu celular
+            </p>
+        </footer>
+
+    </main>
+
+    <script>
+        // Clave única para guardar de forma segura los datos de las jornadas
+        const STORAGE_KEY = 'didi_jornadas_diarias_persistent_v3';
+        
+        // Obtiene la fecha actual en formato local YYYY-MM-DD
+        function obtenerFechaHoyString() {
+            const hoy = new Date();
+            const year = hoy.getFullYear();
+            const month = String(hoy.getMonth() + 1).padStart(2, '0');
+            const day = String(hoy.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        let fechaSeleccionada = obtenerFechaHoyString();
+        let baseDeDatosJornadas = {}; // Guarda array de servicios indexado por fecha ('YYYY-MM-DD')
+
+        // AL CARGAR PÁGINA
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarDatosDesdeStorage();
+            
+            // Establecer la fecha en el input selector
+            const selectorFecha = document.getElementById('selector-fecha-dia');
+            selectorFecha.value = fechaSeleccionada;
+
+            // Manejo del formateo de miles dinámico al escribir
+            const inputMonto = document.getElementById('monto-input');
+            inputMonto.addEventListener('input', (e) => {
+                let valorLimpio = e.target.value.replace(/\D/g, '');
+                if (valorLimpio) {
+                    e.target.value = new Intl.NumberFormat('es-CO').format(parseInt(valorLimpio, 10));
+                } else {
+                    e.target.value = '';
+                }
+            });
+
+            // Enviar formulario
+            document.getElementById('form-nuevo-viaje').addEventListener('submit', (e) => {
+                e.preventDefault();
+                agregarServicio();
+            });
+
+            renderizarDia();
+        });
+
+        // PERSISTENCIA EN LOCALSTORAGE CON VERIFICACIÓN DE SEGURIDAD
+        function cargarDatosDesdeStorage() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') {
+                        baseDeDatosJornadas = parsed;
+                    }
+                }
+            } catch (e) {
+                console.error("Error al cargar datos guardados:", e);
+                baseDeDatosJornadas = {};
+            }
+        }
+
+        function guardarDatosEnStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(baseDeDatosJornadas));
+            } catch (e) {
+                console.error("Error al guardar en almacenamiento local:", e);
+            }
+        }
+
+        // NAVEGACIÓN ENTRE DÍAS EN EL CALENDARIO
+        function seleccionarFechaCalendario(fechaStr) {
+            if (!fechaStr) return;
+            fechaSeleccionada = fechaStr;
+            renderizarDia();
+        }
+
+        function cambiarDiaRelativo(diasOffset) {
+            const partes = fechaSeleccionada.split('-');
+            const y = parseInt(partes[0], 10);
+            const m = parseInt(partes[1], 10) - 1;
+            const d = parseInt(partes[2], 10);
+            
+            const fecha = new Date(y, m, d);
+            fecha.setDate(fecha.getDate() + diasOffset);
+
+            const nY = fecha.getFullYear();
+            const nM = String(fecha.getMonth() + 1).padStart(2, '0');
+            const nD = String(fecha.getDate()).padStart(2, '0');
+
+            fechaSeleccionada = `${nY}-${nM}-${nD}`;
+            document.getElementById('selector-fecha-dia').value = fechaSeleccionada;
+            renderizarDia();
+        }
+
+        function irAHoy() {
+            fechaSeleccionada = obtenerFechaHoyString();
+            document.getElementById('selector-fecha-dia').value = fechaSeleccionada;
+            renderizarDia();
+        }
+
+        // ASIGNAR VALOR RÁPIDO AL INPUT
+        function setQuickMonto(montoNumerico) {
+            const input = document.getElementById('monto-input');
+            input.value = new Intl.NumberFormat('es-CO').format(montoNumerico);
+            input.focus();
+        }
+
+        // AGREGAR VIAJE
+        function agregarServicio() {
+            const inputMonto = document.getElementById('monto-input');
+            const numeroLimpio = inputMonto.value.replace(/\D/g, '');
+            const montoVal = parseInt(numeroLimpio, 10);
+
+            if (isNaN(montoVal) || montoVal <= 0) {
+                alert('Por favor ingresa un monto válido (ejemplo: 5.000)');
+                return;
+            }
+
+            const radioTipo = document.querySelector('input[name="tipoPago"]:checked');
+            const tipo = radioTipo ? radioTipo.value : 'efectivo';
+
+            if (!baseDeDatosJornadas[fechaSeleccionada]) {
+                baseDeDatosJornadas[fechaSeleccionada] = [];
+            }
+
+            const nuevoServicio = {
+                id: Date.now() + Math.random().toString(36).substr(2, 4),
+                monto: montoVal,
+                tipo: tipo,
+                hora: new Date().toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })
+            };
+
+            baseDeDatosJornadas[fechaSeleccionada].unshift(nuevoServicio);
+            
+            // GUARDAR DE INMEDIATO EN EL ALMACENAMIENTO PERMANENTE
+            guardarDatosEnStorage();
+            renderizarDia();
+
+            // Limpiar campo de entrada
+            inputMonto.value = '';
+            inputMonto.focus();
+        }
+
+        // ELIMINAR UN REGISTRO ESPECÍFICO
+        function eliminarServicio(idServicio) {
+            if (!baseDeDatosJornadas[fechaSeleccionada]) return;
+
+            baseDeDatosJornadas[fechaSeleccionada] = baseDeDatosJornadas[fechaSeleccionada].filter(s => s.id !== idServicio);
+            if (baseDeDatosJornadas[fechaSeleccionada].length === 0) {
+                delete baseDeDatosJornadas[fechaSeleccionada];
+            }
+
+            // GUARDAR DE INMEDIATO DESPUÉS DE BORRAR
+            guardarDatosEnStorage();
+            renderizarDia();
+        }
+
+        // FORMATO DE MONEDA EN PESOS
+        function formatearMoneda(valor) {
+            return '$ ' + new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(valor || 0);
+        }
+
+        // RENDERIZAR LA PANTALLA Y ACTUALIZAR TOTALES
+        function renderizarDia() {
+            const serviciosDelDia = baseDeDatosJornadas[fechaSeleccionada] || [];
+            const esHoy = fechaSeleccionada === obtenerFechaHoyString();
+
+            // Estado visual
+            const indEstado = document.getElementById('indicador-estado');
+            if (esHoy) {
+                indEstado.className = "flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full";
+                indEstado.innerHTML = `<span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span><span>Hoy</span>`;
+            } else {
+                indEstado.className = "flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full";
+                indEstado.innerHTML = `<i class="ph-bold ph-clock"></i><span>Historial</span>`;
+            }
+
+            // Cálculo de totales
+            let totalEfectivo = 0;
+            let totalCorporativo = 0;
+
+            serviciosDelDia.forEach(s => {
+                if (s.tipo === 'efectivo') totalEfectivo += s.monto;
+                else totalCorporativo += s.monto;
+            });
+
+            const totalJornada = totalEfectivo + totalCorporativo;
+
+            // Actualizar Tarjeta Verde
+            document.getElementById('total-jornada-monto').textContent = formatearMoneda(totalJornada);
+            document.getElementById('total-servicios-cnt').textContent = serviciosDelDia.length;
+            document.getElementById('total-efectivo-monto').textContent = formatearMoneda(totalEfectivo);
+            document.getElementById('total-corporativo-monto').textContent = formatearMoneda(totalCorporativo);
+
+            // Badge de contador
+            document.getElementById('cant-registros-badge').textContent = `${serviciosDelDia.length} ${serviciosDelDia.length === 1 ? 'viaje' : 'viajes'}`;
+
+            // Actualizar Lista de Servicios Realizados
+            const contLista = document.getElementById('lista-servicios');
+            if (serviciosDelDia.length === 0) {
+                contLista.innerHTML = `<p class="text-center py-6 text-xs text-gray-400 font-medium">No hay viajes registrados para este día.</p>`;
+            } else {
+                contLista.innerHTML = serviciosDelDia.map(serv => `
+                    <div class="py-2.5 flex items-center justify-between text-sm transition-all hover:bg-gray-50 rounded-lg px-2">
+                        <div class="fle
